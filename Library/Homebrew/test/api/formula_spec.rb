@@ -1,9 +1,8 @@
-# typed: false
 # frozen_string_literal: true
 
 require "api"
 
-describe Homebrew::API::Formula do
+RSpec.describe Homebrew::API::Formula do
   let(:cache_dir) { mktmpdir }
 
   before do
@@ -14,10 +13,13 @@ describe Homebrew::API::Formula do
     allow(Utils::Curl).to receive(:curl_download) do |*_args, **kwargs|
       kwargs[:to].write stdout
     end
+    allow(Homebrew::API).to receive(:verify_and_parse_jws) do |json_data|
+      [true, json_data]
+    end
   end
 
   describe "::all_formulae" do
-    let(:formulae_json) {
+    let(:formulae_json) do
       <<~EOS
         [{
           "name": "foo",
@@ -33,21 +35,21 @@ describe Homebrew::API::Formula do
           "aliases": []
         }]
       EOS
-    }
-    let(:formulae_hash) {
+    end
+    let(:formulae_hash) do
       {
         "foo" => { "url" => "https://brew.sh/foo", "aliases" => ["foo-alias1", "foo-alias2"] },
         "bar" => { "url" => "https://brew.sh/bar", "aliases" => ["bar-alias"] },
         "baz" => { "url" => "https://brew.sh/baz", "aliases" => [] },
       }
-    }
-    let(:formulae_aliases) {
+    end
+    let(:formulae_aliases) do
       {
         "foo-alias1" => "foo",
         "foo-alias2" => "foo",
         "bar-alias"  => "bar",
       }
-    }
+    end
 
     it "returns the expected formula JSON list" do
       mock_curl_download stdout: formulae_json

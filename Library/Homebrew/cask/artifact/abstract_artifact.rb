@@ -1,34 +1,36 @@
-# typed: false
+# typed: true # rubocop:todo Sorbet/StrictSigil
 # frozen_string_literal: true
 
-require "active_support/core_ext/object/deep_dup"
+require "attrable"
+require "extend/object/deep_dup"
 
 module Cask
   module Artifact
     # Abstract superclass for all artifacts.
-    #
-    # @api private
     class AbstractArtifact
-      extend T::Sig
+      extend T::Helpers
+      abstract!
 
       include Comparable
-      extend Predicable
 
       def self.english_name
-        @english_name ||= name.sub(/^.*:/, "").gsub(/(.)([A-Z])/, '\1 \2')
+        @english_name ||= T.must(name).sub(/^.*:/, "").gsub(/(.)([A-Z])/, '\1 \2')
       end
 
       def self.english_article
-        @english_article ||= (english_name =~ /^[aeiou]/i) ? "an" : "a"
+        @english_article ||= /^[aeiou]/i.match?(english_name) ? "an" : "a"
       end
 
       def self.dsl_key
-        @dsl_key ||= name.sub(/^.*:/, "").gsub(/(.)([A-Z])/, '\1_\2').downcase.to_sym
+        @dsl_key ||= T.must(name).sub(/^.*:/, "").gsub(/(.)([A-Z])/, '\1_\2').downcase.to_sym
       end
 
       def self.dirmethod
-        @dirmethod ||= "#{dsl_key}dir".to_sym
+        @dirmethod ||= :"#{dsl_key}dir"
       end
+
+      sig { abstract.returns(String) }
+      def summarize; end
 
       def staged_path_join_executable(path)
         path = Pathname(path)
@@ -77,6 +79,7 @@ module Cask
             Service,
             InputMethod,
             InternetPlugin,
+            KeyboardLayout,
             AudioUnitPlugin,
             VstPlugin,
             Vst3Plugin,
@@ -149,7 +152,7 @@ module Cask
       end
 
       def to_args
-        @dsl_args.reject(&:blank?)
+        @dsl_args.compact_blank
       end
     end
   end
